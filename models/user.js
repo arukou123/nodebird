@@ -27,6 +27,8 @@ module.exports = (sequelize, DataTypes) => (
 		}, {
 			timestamps: true,     //createdAt, updatedAt 컬럼 추가
 			paranoid: true,		  //deletedAt 컬럼 추가
+			charset: 'utf8',
+			collate: 'utf8_general_ci',
 		})		
 );
 

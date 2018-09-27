@@ -13,6 +13,8 @@ module.exports = (sequelize, DataTypes) => (   //게시글 등록자의 아이�
 		}, {
 			timestamps: true,     //createdAt, updatedAt 컬럼 추가
 			paranoid: true,		  //deletedAt 컬럼 추가
+			charset: 'utf8',
+			collate: 'utf8_general_ci',
 		})		
 );
 

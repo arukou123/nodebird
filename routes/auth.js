@@ -63,9 +63,9 @@ router.get('/kakao', passport.authenticate('kakao'));  //일로 접근하면 카
 													//get auth/kakao에서 카카오 로인 창으로 리다이렉트를 하고, 결과를 /kakao/callback으로 받습니다.
 
 router.get('/kakao/callback', passport.authenticate('kakao', {   //카카오 로그인 전략을 수행. 로컬과 다른 점은 authenticate 메서드에 콜백 함수를 제공하지 않음
-  failureRedirect: '/',             //카카오 로그인은 내부적으로 req.login을 호출하므로 우리가 직접 하출할 필요가 없습니다. 대신에 로그인 실패 시 어디로 이동할지를 failureRedirect 속성에 적고
+  failureRedirect: '/main/1',             //카카오 로그인은 내부적으로 req.login을 호출하므로 우리가 직접 하출할 필요가 없습니다. 대신에 로그인 실패 시 어디로 이동할지를 failureRedirect 속성에 적고
 }), (req, res) => {
-  res.redirect('/');                //성공 시의 redirect도 적어줍니다.
+  res.redirect('/main/1');                //성공 시의 redirect도 적어줍니다.
 });
 
 module.exports = router;

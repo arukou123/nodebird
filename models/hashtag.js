@@ -10,6 +10,8 @@ module.exports = (sequelize, DataTypes) => (       //나중에 검색하기 위�
 		}, {
 			timestamps: true,     //createdAt, updatedAt 컬럼 추가
 			paranoid: true,		  //deletedAt 컬럼 추가
+			charset: 'utf8',
+			collate: 'utf8_general_ci',   //데이터베이스 한글이 저장되지 않는 문제 해결. 데이터베이스 문자열을 UTF로 설정하겠다
 		})		
 );
 

@@ -9,6 +9,9 @@ const flash = require('connect-flash');
 const passport = require('passport');
 //------채팅방-------
 const ColorHash = require('color-hash');    //사용자에게 고유한 색상 부여
+const helmet = require('helmet'); // 서버의 각종 취약점 보완
+const hpp = require('hpp'); //서버의 각종 취약점 보완
+const RedisStore = require('connect-redis')(session);  //세션을 인자로 넣어야 한다.
 require('dotenv').config();  //cookieParser와 session의 비밀키는 직접 하드코딩하지 않습니다. 소스 코드가 유출되면 키도 유출되니 별도로 관리해야 합니다.
                              //이를 위한 패키지가 dotenv입니다. 비밀키는 .env라는 파일에 모아두고 dotenv가 읽어 process.env 객체에 넣습니다.
 
@@ -22,6 +25,7 @@ const userRouter = require('./routes/user');
 const chatRouter = require('./routes/chat');
 const { sequelize } = require('./models');
 const passportConfig = require('./passport');   //require('./passport/index.js)와 같다. 폴더 내의 index.js 파일은 require시 생략 가능
+const logger = require('./logger'); //위험도 로그 사용
 
 const app = express();
 connect();
@@ -29,7 +33,31 @@ sequelize.sync();  //모델을 서버와 연결
 passportConfig(passport);
 
 
-//----------------------------------Socket.IO에서 세션에 접근하려는 작업 -------------------------------
+
+
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'pug');
+app.set('port', process.env.PORT || 8001);  //port 8001번 사용
+
+
+//-----------개발환경인지 배포환경인지 정함.-------------------
+if (process.env.NODE_ENV === 'production') {
+	app.use(morgan('combined'));     //combined가 사용자 정보 로그를 더 많이 남긴다. NODE_ENV는 .env에 저장 못한다. 동적으로 바뀌어야 하는데 .env는 정적 파일
+} else {
+	app.use(morgan('dev'));
+}
+//-----------개발환경인지 배포환경인지 정함.-------------------
+
+
+app.use(express.static(path.join(__dirname, 'public')));
+app.use('/img', express.static(path.join(__dirname, 'uploads')));
+app.use('/chat/gif', express.static(path.join(__dirname, 'chatUploads')));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser(process.env.COOKIE_SECRET));
+
+
+//-----------개발환경인지 배포환경인지 정함.-------------------
 const sessionMiddleware = session({
 	  resave: false,
 	  saveUninitialized: false,
@@ -38,20 +66,20 @@ const sessionMiddleware = session({
 	    httpOnly: true,
 	    secure: false,
 	  },
+	  store: new RedisStore({  //이제 세션을 RedisStore에 저장한다. 
+		 host: process.env.REDIS_HOST,
+		 port: process.env.REDIS_PORT,
+		 pass: process.env.REDIS_PASSWORD,
+		 logErrors: true,  //에러가 났을 때 콘솔에 표시할지를 결정.
+	  }),
 	});
-
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'pug');
-app.set('port', process.env.PORT || 8001);  //port 8001번 사용
-
-app.use(morgan('dev'));
-app.use(express.static(path.join(__dirname, 'public')));
-app.use('/img', express.static(path.join(__dirname, 'uploads')));
-app.use('/chat/gif', express.static(path.join(__dirname, 'chatUploads')));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser(process.env.COOKIE_SECRET));
+if (process.env.NODE_ENV === 'production') {
+	sessionMiddleware.proxy = true;    //https를 적용할 때만 필요
+}
 app.use(sessionMiddleware);
+//-----------개발환경인지 배포환경인지 정함.-------------------
+
+
 app.use(flash());
 //----------------------------------세션 별 색상 부여 -------------------------------
 app.use((req, res, next) => {
@@ -76,6 +104,8 @@ app.use('/user', userRouter);
 app.use((req, res, next) => {
   const err = new Error('Not Found');
   err.status = 404;
+  logger.info('hello');
+  logger.error(err.message);
   next(err);
 });
 
